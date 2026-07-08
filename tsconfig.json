@@ -1,0 +1,35 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "jsx": "react-jsx",
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "noImplicitAny": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "exactOptionalPropertyTypes": false,
+    "forceConsistentCasingInFileNames": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "declaration": true,
+    "declarationMap": true,
+    "sourceMap": true,
+    "isolatedModules": true,
+    "resolveJsonModule": true,
+    "baseUrl": ".",
+    "paths": {
+      "@visitor-analytics/core": ["./packages/core/src"],
+      "@visitor-analytics/collectors": ["./packages/collectors/src"],
+      "@visitor-analytics/storage": ["./packages/storage/src"],
+      "@visitor-analytics/uploader": ["./packages/uploader/src"],
+      "@visitor-analytics/plugins": ["./packages/plugins/src"],
+      "@visitor-analytics/framework": ["./packages/framework/src"],
+      "@visitor-analytics/utils": ["./packages/utils/src"]
+    }
+  },
+  "include": ["packages/*/src/**/*.ts"],
+  "exclude": ["node_modules", "dist"]
+}
