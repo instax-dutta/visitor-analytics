@@ -5,8 +5,8 @@ import type {
   UploadResult,
   UploadEvent,
   UploadEventHandler,
-} from "@visitor-analytics/core";
-import { generateShortId, requestIdle, SDK_VERSION } from "@visitor-analytics/utils";
+} from "@visitor-analytics-sdk/core";
+import { generateShortId, requestIdle, SDK_VERSION } from "@visitor-analytics-sdk/utils";
 
 const DEFAULT_CONFIG: UploaderConfig = {
   endpoint: "",
@@ -31,6 +31,7 @@ export class Uploader {
   private seenBatchIds: Set<string> = new Set();
   private isUploading = false;
   private isStopped = false;
+  private beforeUnloadHandler: (() => void) | null = null;
 
   constructor(storage: StorageAdapter, config?: Partial<UploaderConfig>) {
     this.config = { ...DEFAULT_CONFIG, ...config };
@@ -44,6 +45,14 @@ export class Uploader {
         requestIdle(() => this.flush());
       }, this.config.flushInterval);
     }
+
+    // C3: Add beforeunload handler to flush remaining data via sendBeacon
+    if (typeof window !== "undefined") {
+      this.beforeUnloadHandler = () => {
+        this.flushViaSendBeacon();
+      };
+      window.addEventListener("beforeunload", this.beforeUnloadHandler);
+    }
   }
 
   stop(): void {
@@ -55,6 +64,10 @@ export class Uploader {
     if (this.retryTimer !== null) {
       clearTimeout(this.retryTimer);
       this.retryTimer = null;
+    }
+    if (this.beforeUnloadHandler && typeof window !== "undefined") {
+      window.removeEventListener("beforeunload", this.beforeUnloadHandler);
+      this.beforeUnloadHandler = null;
     }
     this.retryQueue.clear();
   }
@@ -143,6 +156,38 @@ export class Uploader {
     }
   }
 
+  // C3: sendBeacon fallback for page unload
+  private flushViaSendBeacon(): void {
+    if (this.isStopped) return;
+
+    // Use a synchronous approach - read what we can and send via beacon
+    try {
+      const raw = typeof localStorage !== "undefined"
+        ? localStorage.getItem("va_records")
+        : null;
+      if (!raw) return;
+
+      const records = JSON.parse(raw) as unknown[];
+      if (!Array.isArray(records) || records.length === 0) return;
+
+      const batchId = generateShortId();
+      const payload = {
+        records,
+        batchId,
+        timestamp: Date.now(),
+        sdkVersion: SDK_VERSION,
+      };
+
+      const blob = new Blob([JSON.stringify(payload)], { type: "application/json" });
+
+      if (this.config.endpoint && typeof navigator !== "undefined" && "sendBeacon" in navigator) {
+        navigator.sendBeacon(this.config.endpoint, blob);
+      }
+    } catch {
+      // Best effort - don't throw during page unload
+    }
+  }
+
   private async sendBatch(payload: UploadPayload): Promise<UploadResult> {
     if (!this.config.endpoint) {
       return { success: false, batchId: payload.batchId, error: "No endpoint configured", retryable: false };
@@ -208,7 +253,6 @@ export class Uploader {
         recordCount: payload.records.length,
         timestamp: Date.now(),
         error: "Max retries exceeded",
-        retryCount,
       });
       return;
     }
@@ -281,7 +325,9 @@ export class Uploader {
     await this.flush();
   }
 
+  // M1: Document compression browser support
   private async compress(data: string): Promise<string | Blob> {
+    // CompressionStream support: Chrome 80+, Firefox 113+, Safari 16.4+
     if (typeof CompressionStream === "undefined") {
       return data;
     }

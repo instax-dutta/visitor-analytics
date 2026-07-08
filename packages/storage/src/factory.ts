@@ -1,4 +1,4 @@
-import type { StorageAdapter } from "@visitor-analytics/core";
+import type { StorageAdapter } from "@visitor-analytics-sdk/core";
 import { MemoryStorage } from "./memory-storage";
 import { LocalStorageAdapter } from "./localstorage-adapter";
 import { IndexedDBAdapter } from "./indexeddb-adapter";

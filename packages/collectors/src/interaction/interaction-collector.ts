@@ -1,5 +1,5 @@
-import type { Collector, CollectorContext, InteractionData } from "@visitor-analytics/core";
-import { SDK_VERSION } from "@visitor-analytics/utils";
+import type { Collector, CollectorContext, InteractionData } from "@visitor-analytics-sdk/core";
+import { SDK_VERSION } from "@visitor-analytics-sdk/utils";
 
 export interface InteractionState {
   sessionStart: number;
@@ -31,6 +31,8 @@ export class InteractionCollector implements Collector {
   private cleanupFns: Array<() => void> = [];
   private sessionTimeout: ReturnType<typeof setTimeout> | null = null;
   private sessionTimeoutMs: number;
+  private originalPushState: History["pushState"] | null = null;
+  private originalReplaceState: History["replaceState"] | null = null;
 
   constructor(options?: { sessionTimeout?: number }) {
     this.sessionTimeoutMs = options?.sessionTimeout ?? 30 * 60 * 1000; // 30 minutes
@@ -71,7 +73,7 @@ export class InteractionCollector implements Collector {
     const win = context.window;
     const doc = context.document;
 
-    // Click counter (passive, non-tracking — just counts)
+    // Click counter (passive, non-tracking -- just counts)
     const clickHandler = () => {
       this.state.clickCount++;
       this.resetSessionTimeout();
@@ -132,7 +134,7 @@ export class InteractionCollector implements Collector {
       win.removeEventListener("blur", focusHandler);
     });
 
-    // Route changes — listen to popstate only, avoid monkey-patching history
+    // H3: Listen to popstate for browser back/forward
     const onPopState = () => {
       this.state.routeChanges++;
       this.state.lastPage = location.href;
@@ -142,7 +144,43 @@ export class InteractionCollector implements Collector {
       win.removeEventListener("popstate", onPopState);
     });
 
+    // H3: Wrap history.pushState and history.replaceState for SPA route tracking
+    const histWin = win as unknown as { history: History };
+    this.originalPushState = histWin.history.pushState.bind(histWin.history);
+    this.originalReplaceState = histWin.history.replaceState.bind(histWin.history);
+
+    const state = this.state;
+    const origPush = this.originalPushState;
+    const origReplace = this.originalReplaceState;
+
+    histWin.history.pushState = function (
+      this: History,
+      data: unknown,
+      unused: string,
+      url?: string | URL | null
+    ) {
+      origPush.call(this, data, unused, url);
+      state.routeChanges++;
+      state.lastPage = location.href;
+    } as typeof History.prototype.pushState;
+
+    histWin.history.replaceState = function (
+      this: History,
+      data: unknown,
+      unused: string,
+      url?: string | URL | null
+    ) {
+      origReplace.call(this, data, unused, url);
+      state.lastPage = location.href;
+    } as typeof History.prototype.replaceState;
+
     this.startSessionTimeout();
+  }
+
+  // H3: Public method for framework integrations to manually track route changes
+  trackRouteChange(url: string): void {
+    this.state.routeChanges++;
+    this.state.lastPage = url;
   }
 
   private startSessionTimeout(): void {
@@ -191,6 +229,15 @@ export class InteractionCollector implements Collector {
     if (this.sessionTimeout !== null) {
       clearTimeout(this.sessionTimeout);
     }
+
+    // Restore original history methods
+    if (this.originalPushState && typeof history !== "undefined") {
+      (history as unknown as { pushState: History["pushState"] }).pushState = this.originalPushState;
+    }
+    if (this.originalReplaceState && typeof history !== "undefined") {
+      (history as unknown as { replaceState: History["replaceState"] }).replaceState = this.originalReplaceState;
+    }
+
     for (const fn of this.cleanupFns) {
       fn();
     }

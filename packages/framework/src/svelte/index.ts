@@ -1,5 +1,5 @@
-import { createAnalytics } from "@visitor-analytics/core";
-import type { AnalyticsConfigPartial, VisitorAnalyticsInstance, AnalyticsRecord } from "@visitor-analytics/core";
+import { createAnalytics } from "@visitor-analytics-sdk/core";
+import type { AnalyticsConfigPartial, VisitorAnalyticsInstance, AnalyticsRecord } from "@visitor-analytics-sdk/core";
 
 // ─── Store Interface ─────────────────────────────────────────────────────────
 

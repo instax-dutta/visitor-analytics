@@ -1,5 +1,5 @@
-import type { Collector, CollectorContext, BrowserData } from "@visitor-analytics/core";
-import { SDK_VERSION } from "@visitor-analytics/utils";
+import type { Collector, CollectorContext, BrowserData } from "@visitor-analytics-sdk/core";
+import { SDK_VERSION } from "@visitor-analytics-sdk/utils";
 
 export class BrowserCollector implements Collector {
   readonly name = "browser";
@@ -34,6 +34,7 @@ export class BrowserCollector implements Collector {
     };
   }
 
+  // H1: Improved UA parser with proper detection order
   private parseUA(ua: string): {
     name: string;
     version: string;
@@ -45,41 +46,85 @@ export class BrowserCollector implements Collector {
     let engine = "unknown";
     let engineVersion = "0";
 
-    // Browser detection
+    // Order matters: check specific browsers before generic ones
+
+    // Headless browsers
+    const isHeadless = ua.includes("HeadlessChrome") || ua.includes("Headless");
+
+    // Firefox (check before Chrome since some Fx clones include "Chrome/")
     if (ua.includes("Firefox/") && !ua.includes("Seamonkey")) {
       name = "Firefox";
       const match = ua.match(/Firefox\/([\d.]+)/);
       version = match?.[1] ?? "0";
       engine = "Gecko";
-    } else if (ua.includes("Edg/")) {
+    }
+    // Edge (must be before Chrome)
+    else if (ua.includes("Edg/")) {
       name = "Edge";
       const match = ua.match(/Edg\/([\d.]+)/);
       version = match?.[1] ?? "0";
       engine = "Blink";
-    } else if (ua.includes("OPR/") || ua.includes("Opera")) {
+    }
+    // Opera (must be before Chrome)
+    else if (ua.includes("OPR/") || ua.includes("Opera")) {
       name = "Opera";
       const match = ua.match(/(?:OPR|Opera)\/([\d.]+)/);
       version = match?.[1] ?? "0";
       engine = "Blink";
-    } else if (ua.includes("Chrome/") && !ua.includes("Edg/")) {
+    }
+    // Samsung Internet
+    else if (ua.includes("SamsungBrowser/")) {
+      name = "Samsung Internet";
+      const match = ua.match(/SamsungBrowser\/([\d.]+)/);
+      version = match?.[1] ?? "0";
+      engine = "Blink";
+    }
+    // UC Browser
+    else if (ua.includes("UCBrowser/") || ua.includes("UCWEB")) {
+      name = "UC Browser";
+      const match = ua.match(/(?:UCBrowser|UCWEB)\/([\d.]+)/);
+      version = match?.[1] ?? "0";
+      engine = "Blink";
+    }
+    // Opera Mini
+    else if (ua.includes("Opera Mini/")) {
+      name = "Opera Mini";
+      const match = ua.match(/Opera Mini\/([\d.]+)/);
+      version = match?.[1] ?? "0";
+      engine = "Presto";
+    }
+    // Chrome on iOS (check before Safari - contains both "Safari/" and "CriOS/")
+    else if (ua.includes("CriOS/")) {
+      name = "Chrome";
+      const match = ua.match(/CriOS\/([\d.]+)/);
+      version = match?.[1] ?? "0";
+      engine = "WebKit"; // iOS Chrome uses WebKit
+    }
+    // Chrome on desktop / Android
+    else if (ua.includes("Chrome/") && !ua.includes("Edg/") && !ua.includes("OPR/")) {
       name = "Chrome";
       const match = ua.match(/Chrome\/([\d.]+)/);
       version = match?.[1] ?? "0";
       engine = "Blink";
-    } else if (
-      ua.includes("Safari/") &&
-      !ua.includes("Chrome/") &&
-      !ua.includes("Chromium")
-    ) {
+    }
+    // Safari (must be after all Chrome checks)
+    else if (ua.includes("Safari/") && !ua.includes("Chrome/") && !ua.includes("Chromium")) {
       name = "Safari";
       const match = ua.match(/Version\/([\d.]+)/);
       version = match?.[1] ?? "0";
       engine = "WebKit";
-    } else if (ua.includes("MSIE") || ua.includes("Trident/")) {
+    }
+    // Internet Explorer
+    else if (ua.includes("MSIE") || ua.includes("Trident/")) {
       name = "Internet Explorer";
       const match = ua.match(/(?:MSIE |Trident\/.*rv:)([\d.]+)/);
       version = match?.[1] ?? "0";
       engine = "Trident";
+    }
+
+    // Append headless indicator
+    if (isHeadless && name !== "unknown") {
+      name += " (headless)";
     }
 
     // Engine version

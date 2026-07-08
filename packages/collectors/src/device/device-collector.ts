@@ -1,5 +1,5 @@
-import type { Collector, CollectorContext, DeviceData, DeviceFormFactor, TouchSupport } from "@visitor-analytics/core";
-import { SDK_VERSION } from "@visitor-analytics/utils";
+import type { Collector, CollectorContext, DeviceData, DeviceFormFactor, TouchSupport } from "@visitor-analytics-sdk/core";
+import { SDK_VERSION } from "@visitor-analytics-sdk/utils";
 
 export class DeviceCollector implements Collector {
   readonly name = "device";

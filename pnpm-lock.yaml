@@ -38,10 +38,10 @@ importers:
 
   packages/collectors:
     dependencies:
-      '@visitor-analytics/core':
+      '@visitor-analytics-sdk/core':
         specifier: workspace:*
         version: link:../core
-      '@visitor-analytics/utils':
+      '@visitor-analytics-sdk/utils':
         specifier: workspace:*
         version: link:../utils
 
@@ -56,9 +56,12 @@ importers:
 
   packages/framework:
     dependencies:
-      '@visitor-analytics/core':
+      '@visitor-analytics-sdk/core':
         specifier: workspace:*
         version: link:../core
+      '@visitor-analytics-sdk/utils':
+        specifier: workspace:*
+        version: link:../utils
       react:
         specifier: '>=17.0.0'
         version: 19.2.7
@@ -78,26 +81,36 @@ importers:
 
   packages/plugins:
     dependencies:
-      '@visitor-analytics/core':
+      '@visitor-analytics-sdk/core':
         specifier: workspace:*
         version: link:../core
+      '@visitor-analytics-sdk/utils':
+        specifier: workspace:*
+        version: link:../utils
 
   packages/storage:
     dependencies:
-      '@visitor-analytics/core':
+      '@visitor-analytics-sdk/core':
         specifier: workspace:*
         version: link:../core
 
   packages/uploader:
     dependencies:
-      '@visitor-analytics/core':
+      '@visitor-analytics-sdk/core':
         specifier: workspace:*
         version: link:../core
-      '@visitor-analytics/utils':
+      '@visitor-analytics-sdk/utils':
         specifier: workspace:*
         version: link:../utils
 
-  packages/utils: {}
+  packages/utils:
+    devDependencies:
+      tsup:
+        specifier: ^8.0.0
+        version: 8.5.1(postcss@8.5.16)(typescript@5.9.3)
+      typescript:
+        specifier: ^5.4.0
+        version: 5.9.3
 
 packages:
 

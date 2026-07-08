@@ -3,6 +3,7 @@ export {
   useAnalytics,
   useAnalyticsContext,
   useAnalyticsEvent,
+  usePageView,
   useCollectedData,
   useAnalyticsExport,
 } from "./react/index";

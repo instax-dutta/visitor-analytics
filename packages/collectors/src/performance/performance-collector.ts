@@ -1,5 +1,5 @@
-import type { Collector, CollectorContext, PerformanceData, NavigationTiming, PaintTiming, PerformanceLike } from "@visitor-analytics/core";
-import { safeCall, SDK_VERSION } from "@visitor-analytics/utils";
+import type { Collector, CollectorContext, PerformanceData, NavigationTiming, PaintTiming, PerformanceLike } from "@visitor-analytics-sdk/core";
+import { safeCall, SDK_VERSION } from "@visitor-analytics-sdk/utils";
 
 export class PerformanceCollector implements Collector {
   readonly name = "performance";

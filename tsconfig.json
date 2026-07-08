@@ -21,15 +21,15 @@
     "resolveJsonModule": true,
     "baseUrl": ".",
     "paths": {
-      "@visitor-analytics/core": ["./packages/core/src"],
-      "@visitor-analytics/collectors": ["./packages/collectors/src"],
-      "@visitor-analytics/storage": ["./packages/storage/src"],
-      "@visitor-analytics/uploader": ["./packages/uploader/src"],
-      "@visitor-analytics/plugins": ["./packages/plugins/src"],
-      "@visitor-analytics/framework": ["./packages/framework/src"],
-      "@visitor-analytics/utils": ["./packages/utils/src"]
+      "@visitor-analytics-sdk/core": ["./packages/core/src"],
+      "@visitor-analytics-sdk/collectors": ["./packages/collectors/src"],
+      "@visitor-analytics-sdk/storage": ["./packages/storage/src"],
+      "@visitor-analytics-sdk/uploader": ["./packages/uploader/src"],
+      "@visitor-analytics-sdk/plugins": ["./packages/plugins/src"],
+      "@visitor-analytics-sdk/framework": ["./packages/framework/src"],
+      "@visitor-analytics-sdk/utils": ["./packages/utils/src"]
     }
   },
-  "include": ["packages/*/src/**/*.ts"],
+  "include": ["packages/*/src/**/*.ts", "packages/*/src/**/*.tsx"],
   "exclude": ["node_modules", "dist"]
 }

@@ -1,4 +1,4 @@
-import { EventBus } from "./event-bus";
+import { EventBus } from "@visitor-analytics-sdk/utils";
 import {
   type AnalyticsConfig,
   type AnalyticsConfigPartial,
@@ -10,11 +10,12 @@ import {
   type AnalyticsEvent,
   type VisitorAnalyticsInstance,
   type StorageAdapter,
+  type AnalyticsQuery,
 } from "./types";
-import { PluginManager, createPluginContext } from "@visitor-analytics/plugins";
-import { Uploader } from "@visitor-analytics/uploader";
-import { StorageAdapterFactory } from "@visitor-analytics/storage";
-import { generateId, isBrowser, requestIdle, SDK_VERSION, deepFreeze } from "@visitor-analytics/utils";
+import { PluginManager, createPluginContext } from "@visitor-analytics-sdk/plugins";
+import { Uploader } from "@visitor-analytics-sdk/uploader";
+import { StorageAdapterFactory } from "@visitor-analytics-sdk/storage";
+import { generateId, isBrowser, requestIdle, SDK_VERSION, deepFreeze, detectBestStorage } from "@visitor-analytics-sdk/utils";
 import {
   BrowserCollector,
   DeviceCollector,
@@ -22,11 +23,12 @@ import {
   EnvironmentCollector,
   FeatureCollector,
   InteractionCollector,
-} from "@visitor-analytics/collectors";
+} from "@visitor-analytics-sdk/collectors";
 
 const DEFAULT_CONFIG: AnalyticsConfig = {
   endpoint: "",
-  storage: "memory",
+  // H5: Auto-detect best storage instead of defaulting to memory
+  storage: "indexeddb" as const,
   autoStart: true,
   batchSize: 50,
   flushInterval: 30000,
@@ -68,6 +70,10 @@ export class VisitorAnalytics implements VisitorAnalyticsInstance {
     }
     if (config.headers) {
       merged.headers = { ...DEFAULT_CONFIG.headers, ...config.headers };
+    }
+    // H5: Auto-detect storage if user didn't explicitly set it
+    if (!config.storage) {
+      merged.storage = detectBestStorage();
     }
     this.config = merged;
     this.eventBus = new EventBus();
@@ -129,7 +135,9 @@ export class VisitorAnalytics implements VisitorAnalyticsInstance {
     }
   }
 
-  private buildCollectorContext(): CollectorContext {
+  // C1: Guard buildCollectorContext with isBrowser() - returns null on server
+  private buildCollectorContext(): CollectorContext | null {
+    if (!isBrowser()) return null;
     if (this.collectorContext) return this.collectorContext;
 
     const ctx: CollectorContext = {
@@ -148,6 +156,8 @@ export class VisitorAnalytics implements VisitorAnalyticsInstance {
 
   start(): void {
     if (this.isRunning) return;
+    // C1: Guard start against SSR
+    if (!isBrowser()) return;
     this.isRunning = true;
 
     this.uploader.start();
@@ -155,16 +165,18 @@ export class VisitorAnalytics implements VisitorAnalyticsInstance {
 
     // Initialize collectors that have init
     for (const collector of this.collectors) {
-      if (collector.init && isBrowser()) {
+      if (collector.init) {
+        const ctx = this.buildCollectorContext();
+        if (!ctx) continue;
         requestIdle(() => {
-          collector.init!(this.buildCollectorContext()).catch((err) => {
+          collector.init!(ctx).catch((err) => {
             console.debug("[VisitorAnalytics] Collector init failed:", collector.name, err);
           });
         });
       }
     }
 
-    // Periodic collection
+    // Periodic collection only - no flush here (C2 fix)
     this.collectTimer = setInterval(() => {
       requestIdle(() => this.collectAndStore());
     }, this.config.flushInterval);
@@ -183,14 +195,14 @@ export class VisitorAnalytics implements VisitorAnalyticsInstance {
     this.eventBus.emit("stop");
   }
 
+  // C2: flush() should only upload what's already stored, not collect again
   async flush(): Promise<void> {
-    await this.collectAndStore();
     await this.uploader.flush();
     this.eventBus.emit("flush");
   }
 
+  // C2: sync() same - only upload, don't re-collect
   async sync(): Promise<void> {
-    await this.collectAndStore();
     await this.uploader.sync();
     this.eventBus.emit("sync");
   }
@@ -234,8 +246,43 @@ export class VisitorAnalytics implements VisitorAnalyticsInstance {
     return this.storage.load();
   }
 
+  // M2: Query API for filtering records
+  async query(query: AnalyticsQuery): Promise<readonly AnalyticsRecord[]> {
+    const allRecords = await this.storage.load();
+    let result = [...allRecords];
+
+    if (query.since !== undefined) {
+      result = result.filter((r) => r.timestamp >= query.since!);
+    }
+    if (query.until !== undefined) {
+      result = result.filter((r) => r.timestamp <= query.until!);
+    }
+    if (query.pagePath !== undefined) {
+      result = result.filter((r) => r.pagePath === query.pagePath);
+    }
+    if (query.sessionId !== undefined) {
+      result = result.filter((r) => r.sessionId === query.sessionId);
+    }
+    if (query.offset !== undefined) {
+      result = result.slice(query.offset);
+    }
+    if (query.limit !== undefined) {
+      result = result.slice(0, query.limit);
+    }
+
+    return result;
+  }
+
   async export(): Promise<string> {
     return this.storage.export();
+  }
+
+  // H3: Expose trackRouteChange for SPA framework integrations
+  trackRouteChange(url: string): void {
+    const interactionCollector = this.collectors.find((c) => c.name === "interaction") as InteractionCollector | undefined;
+    if (interactionCollector) {
+      interactionCollector.trackRouteChange(url);
+    }
   }
 
   on(event: AnalyticsEvent, handler: (...args: readonly unknown[]) => void): void {
@@ -266,6 +313,7 @@ export class VisitorAnalytics implements VisitorAnalyticsInstance {
     if (!isBrowser()) return;
 
     const context = this.buildCollectorContext();
+    if (!context) return; // C1: SSR guard
     const record = await this.collectRecord(context);
     if (record) {
       await this.storage.save(record);
@@ -289,7 +337,7 @@ export class VisitorAnalytics implements VisitorAnalyticsInstance {
 
     if (partials.length === 0) return null;
 
-    // Merge all partials (deep clone to avoid shared references)
+    // C4: Single deep copy via structuredClone (no more double clone)
     const merged = structuredClone(Object.assign({}, ...partials)) as Partial<AnalyticsRecord>;
 
     const record: AnalyticsRecord = {

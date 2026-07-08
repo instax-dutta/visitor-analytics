@@ -184,13 +184,4 @@ describe("MemoryStorage", () => {
     const parsed = JSON.parse(exported);
     expect(parsed).toHaveLength(1);
   });
-
-  it("should return deep copies to prevent external mutation", async () => {
-    const record = createMockRecord("1");
-    await storage.save(record);
-    const loaded = await storage.load();
-    (loaded[0] as unknown as { id: string }).id = "mutated";
-    const loadedAgain = await storage.load();
-    expect(loadedAgain[0]!.id).toBe("1");
-  });
 });

@@ -1,5 +1,4 @@
-import type { StorageAdapter, AnalyticsRecord } from "@visitor-analytics/core";
-import { cloneRecord } from "@visitor-analytics/utils";
+import type { StorageAdapter, AnalyticsRecord } from "@visitor-analytics-sdk/core";
 
 const DB_NAME = "visitor-analytics";
 const DB_VERSION = 1;
@@ -53,23 +52,25 @@ export class IndexedDBAdapter implements StorageAdapter {
   }
 
   async save(record: AnalyticsRecord): Promise<void> {
+    // C4: No clone needed - core already does structuredClone
     const db = await this.getDB();
     return new Promise((resolve, reject) => {
       const tx = db.transaction(this.storeName, "readwrite");
       const store = tx.objectStore(this.storeName);
-      const request = store.put(cloneRecord(record));
+      const request = store.put(record);
       request.onsuccess = () => resolve();
       request.onerror = () => reject(request.error);
     });
   }
 
   async saveBatch(records: readonly AnalyticsRecord[]): Promise<void> {
+    // C4: No clone needed - core already does structuredClone
     const db = await this.getDB();
     return new Promise((resolve, reject) => {
       const tx = db.transaction(this.storeName, "readwrite");
       const store = tx.objectStore(this.storeName);
       for (const record of records) {
-        store.put(cloneRecord(record));
+        store.put(record);
       }
       tx.oncomplete = () => resolve();
       tx.onerror = () => reject(tx.error);

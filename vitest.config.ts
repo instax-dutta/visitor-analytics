@@ -14,28 +14,28 @@ export default defineConfig({
   },
   resolve: {
     alias: {
-      "@visitor-analytics/core": path.resolve(__dirname, "packages/core/src"),
-      "@visitor-analytics/collectors": path.resolve(
+      "@visitor-analytics-sdk/core": path.resolve(__dirname, "packages/core/src"),
+      "@visitor-analytics-sdk/collectors": path.resolve(
         __dirname,
         "packages/collectors/src"
       ),
-      "@visitor-analytics/storage": path.resolve(
+      "@visitor-analytics-sdk/storage": path.resolve(
         __dirname,
         "packages/storage/src"
       ),
-      "@visitor-analytics/uploader": path.resolve(
+      "@visitor-analytics-sdk/uploader": path.resolve(
         __dirname,
         "packages/uploader/src"
       ),
-      "@visitor-analytics/plugins": path.resolve(
+      "@visitor-analytics-sdk/plugins": path.resolve(
         __dirname,
         "packages/plugins/src"
       ),
-      "@visitor-analytics/framework": path.resolve(
+      "@visitor-analytics-sdk/framework": path.resolve(
         __dirname,
         "packages/framework/src"
       ),
-      "@visitor-analytics/utils": path.resolve(
+      "@visitor-analytics-sdk/utils": path.resolve(
         __dirname,
         "packages/utils/src"
       ),

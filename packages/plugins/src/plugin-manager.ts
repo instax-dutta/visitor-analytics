@@ -1,5 +1,5 @@
-import type { Plugin, PluginContext, Collector, AnalyticsEvent } from "@visitor-analytics/core";
-import { EventBus } from "@visitor-analytics/core";
+import type { Plugin, PluginContext, Collector, AnalyticsEvent } from "@visitor-analytics-sdk/core";
+import { EventBus } from "@visitor-analytics-sdk/utils";
 
 export class PluginManager {
   private readonly installedPlugins = new Map<string, Plugin>();

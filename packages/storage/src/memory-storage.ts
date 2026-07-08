@@ -1,21 +1,21 @@
-import type { StorageAdapter, AnalyticsRecord } from "@visitor-analytics/core";
-import { cloneRecord } from "@visitor-analytics/utils";
+import type { StorageAdapter, AnalyticsRecord } from "@visitor-analytics-sdk/core";
 
 export class MemoryStorage implements StorageAdapter {
   private records: AnalyticsRecord[] = [];
 
   async save(record: AnalyticsRecord): Promise<void> {
-    this.records.push(cloneRecord(record));
+    // C4: No clone needed - core already does structuredClone
+    this.records.push(record);
   }
 
   async saveBatch(records: readonly AnalyticsRecord[]): Promise<void> {
     for (const record of records) {
-      this.records.push(cloneRecord(record));
+      this.records.push(record);
     }
   }
 
   async load(): Promise<readonly AnalyticsRecord[]> {
-    return this.records.map((r) => cloneRecord(r));
+    return this.records;
   }
 
   async loadBatch(limit: number): Promise<readonly AnalyticsRecord[]> {

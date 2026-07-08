@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef, createContext, useContext, useMemo } from "react";
 import type { ReactNode } from "react";
-import { createAnalytics } from "@visitor-analytics/core";
-import type { AnalyticsConfigPartial, VisitorAnalyticsInstance, AnalyticsRecord, AnalyticsEvent } from "@visitor-analytics/core";
+import { createAnalytics } from "@visitor-analytics-sdk/core";
+import type { AnalyticsConfigPartial, VisitorAnalyticsInstance, AnalyticsRecord, AnalyticsEvent } from "@visitor-analytics-sdk/core";
 
 // ─── Context ─────────────────────────────────────────────────────────────────
 
@@ -85,6 +85,23 @@ export function useAnalyticsEvent(
       analytics.off(event, wrappedHandler);
     };
   }, [analytics, event]);
+}
+
+// ─── usePageView Hook (M4) ──────────────────────────────────────────────────
+// Automatically tracks page views on pathname changes.
+// Usage: call from a layout component with usePathname() or similar.
+
+export function usePageView(getPathname: () => string): void {
+  const analytics = useAnalytics();
+  const lastPathRef = useRef<string>("");
+
+  useEffect(() => {
+    const currentPath = getPathname();
+    if (currentPath !== lastPathRef.current) {
+      lastPathRef.current = currentPath;
+      analytics.trackRouteChange(currentPath);
+    }
+  }, [analytics, getPathname]);
 }
 
 // ─── useCollectedData Hook ──────────────────────────────────────────────────

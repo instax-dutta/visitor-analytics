@@ -1,31 +1,35 @@
 # Visitor Analytics SDK
 
+[![npm version](https://img.shields.io/npm/v/@visitor-analytics-sdk/core.svg)](https://www.npmjs.com/package/@visitor-analytics-sdk/core)
+[![CI](https://img.shields.io/github/actions/workflow/status/visitor-analytics/ci.yml?branch=main)](https://github.com/visitor-analytics/actions)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
 Production-ready, framework-agnostic, privacy-preserving analytics SDK in TypeScript.
 
 ## Features
 
-- **Framework-agnostic** — Works with React, Next.js, Vite, Vue, Svelte, SolidJS, Astro, and vanilla JS
-- **Privacy-first** — Never collects PII; all data is anonymous and generalized for aggregate analytics
-- **Plugin-based** — Modular collectors, storage adapters, and plugins
-- **Type-safe** — Full TypeScript with strict types, no `any`
-- **Tree-shakable** — ESM-first, import only what you need
-- **Zero runtime deps** — No external dependencies
-- **Performance-optimized** — Passive listeners, `requestIdleCallback`, debounced ops, batched DOM reads
-- **Offline-ready** — Queue records offline, auto-sync when online
-- **Resilient** — Exponential backoff retries, request deduplication
+- **Framework-agnostic** -- Works with React, Next.js, Vite, Vue, Svelte, SolidJS, Astro, and vanilla JS
+- **Privacy-first** -- Never collects PII; all data is anonymous and generalized for aggregate analytics
+- **Plugin-based** -- Modular collectors, storage adapters, and plugins
+- **Type-safe** -- Full TypeScript with strict types, no `any`
+- **Tree-shakable** -- ESM-first, import only what you need
+- **Zero runtime deps** -- No external dependencies
+- **Performance-optimized** -- Passive listeners, `requestIdleCallback`, debounced ops, batched DOM reads
+- **Offline-ready** -- Queue records offline, auto-sync when online
+- **Resilient** -- Exponential backoff retries, request deduplication, sendBeacon fallback
 
 ## Quick Start
 
 ```bash
-npm install @visitor-analytics/core
+npm install @visitor-analytics-sdk/core
 ```
 
 ```ts
-import { createAnalytics } from "@visitor-analytics/core";
+import { createAnalytics } from "@visitor-analytics-sdk/core";
 
 const analytics = createAnalytics({
   endpoint: "https://your-api.com/analytics",
-  storage: "indexeddb",
+  // storage auto-detects: indexeddb -> localstorage -> memory
   autoStart: true,
 });
 
@@ -62,13 +66,13 @@ Creates a new analytics instance.
 ```ts
 const analytics = createAnalytics({
   endpoint: "https://api.example.com/analytics",
-  storage: "indexeddb",       // "memory" | "localstorage" | "indexeddb" | StorageAdapter
+  storage: "indexeddb",       // auto-detected if omitted: indexeddb -> localstorage -> memory
   autoStart: true,            // Start collecting immediately
   batchSize: 50,              // Records per upload batch
   flushInterval: 30000,       // ms between auto-flushes
   maxRetries: 5,              // Max retry attempts
   retryBaseDelay: 1000,       // Base delay for exponential backoff
-  compressionEnabled: false,  // Gzip compression
+  compressionEnabled: false,  // Gzip compression (requires CompressionStream: Chrome 80+, Firefox 113+, Safari 16.4+)
   deduplicationEnabled: true, // Deduplicate batches
   includeUserAgent: false,    // Include raw UA string
   includeReferrer: true,      // Include page referrer
@@ -82,17 +86,32 @@ const analytics = createAnalytics({
 ```ts
 analytics.start()                          // Begin collecting
 analytics.stop()                           // Pause collecting
-analytics.flush()                          // Force upload pending records
+analytics.flush()                          // Force upload pending records (does NOT re-collect)
 analytics.sync()                           // Force sync (alias for flush)
 analytics.retryFailed()                    // Retry failed uploads
 analytics.use(plugin)                      // Install a plugin
 analytics.addCollector(collector)          // Add a custom collector
 analytics.removeCollector(name)            // Remove a collector
 analytics.getCollectedData()               // Get all stored records
+analytics.query(query)                     // Query records with filters
 analytics.export()                         // Export as JSON string
+analytics.trackRouteChange(url)            // Manually track a SPA route change
 analytics.on(event, handler)               // Subscribe to events
 analytics.off(event, handler)              // Unsubscribe from events
 analytics.destroy()                        // Cleanup everything
+```
+
+### Query API
+
+```ts
+const records = await analytics.query({
+  since: Date.now() - 86400000,   // Last 24 hours
+  until: Date.now(),
+  pagePath: "/pricing",           // Filter by page path
+  sessionId: "abc-123",           // Filter by session
+  limit: 100,                     // Max records
+  offset: 0,                      // Skip first N records
+});
 ```
 
 ### Events
@@ -110,17 +129,19 @@ analytics.on("plugin-installed", (name) => { /* ... */ });
 analytics.on("plugin-uninstalled", (name) => { /* ... */ });
 ```
 
+**Important:** When subscribing via `analytics.on()`, you must call `analytics.off()` to clean up. The React `useAnalyticsEvent` hook handles this automatically.
+
 ## Framework Integration
 
 ### React
 
 ```tsx
-import { AnalyticsProvider, useAnalytics, useCollectedData } from "@visitor-analytics/framework/react";
+import { AnalyticsProvider, useAnalytics, usePageView, useCollectedData } from "@visitor-analytics-sdk/framework/react";
 
 // Wrap your app
 function App() {
   return (
-    <AnalyticsProvider config={{ endpoint: "/api/analytics", storage: "indexeddb" }}>
+    <AnalyticsProvider config={{ endpoint: "/api/analytics" }}>
       <Dashboard />
     </AnalyticsProvider>
   );
@@ -138,13 +159,24 @@ function Dashboard() {
     </div>
   );
 }
+
+// Track page views in a layout (Next.js App Router example)
+"use client";
+import { usePathname } from "next/navigation";
+import { usePageView } from "@visitor-analytics-sdk/framework/react";
+
+export default function RootLayout({ children }) {
+  const pathname = usePathname();
+  usePageView(() => pathname);
+  return <>{children}</>;
+}
 ```
 
 ### Vue
 
 ```vue
 <script setup>
-import { createAnalyticsPlugin, useVueAnalytics } from "@visitor-analytics/framework/vue";
+import { createAnalyticsPlugin, useVueAnalytics } from "@visitor-analytics-sdk/framework/vue";
 
 // In main.ts
 const app = createApp(App);
@@ -160,11 +192,10 @@ const { data, loading } = useVueCollectedData();
 
 ```svelte
 <script>
-  import { createAnalyticsStore } from "@visitor-analytics/framework/svelte";
+  import { createAnalyticsStore } from "@visitor-analytics-sdk/framework/svelte";
 
   const { analytics, data, start, stop, flush } = createAnalyticsStore({
     endpoint: "/api/analytics",
-    storage: "indexeddb",
   });
 
   start();
@@ -177,7 +208,7 @@ const { data, loading } = useVueCollectedData();
 ### SolidJS
 
 ```tsx
-import { createAnalyticsHook, AnalyticsProvider } from "@visitor-analytics/framework/solid";
+import { createAnalyticsHook, AnalyticsProvider } from "@visitor-analytics-sdk/framework/solid";
 
 function App() {
   return (
@@ -206,7 +237,7 @@ function Dashboard() {
 
 ```astro
 ---
-import { createAstroAnalytics } from "@visitor-analytics/framework/astro";
+import { createAstroAnalytics } from "@visitor-analytics-sdk/framework/astro";
 
 const analytics = createAstroAnalytics({
   endpoint: "/api/analytics",
@@ -220,8 +251,7 @@ const analytics = createAstroAnalytics({
 </head>
 <body>
   <script type="module">
-    // Analytics is already initialized
-    import { createAnalytics } from "@visitor-analytics/core";
+    import { createAnalytics } from "@visitor-analytics-sdk/core";
     window.__visitorAnalytics = createAnalytics({
       endpoint: '/api/analytics',
       storage: 'indexeddb',
@@ -234,7 +264,7 @@ const analytics = createAstroAnalytics({
 ### Vanilla JS
 
 ```ts
-import { createAnalytics } from "@visitor-analytics/core";
+import { createAnalytics } from "@visitor-analytics-sdk/core";
 
 const analytics = createAnalytics({
   endpoint: "https://api.example.com/analytics",
@@ -251,7 +281,7 @@ analytics.on("batch-uploaded", (batchId) => {
 ## Custom Collector
 
 ```ts
-import type { Collector, CollectorContext, AnalyticsRecord } from "@visitor-analytics/core";
+import type { Collector, CollectorContext, AnalyticsRecord } from "@visitor-analytics-sdk/core";
 
 class MyCollector implements Collector {
   readonly name = "my-collector";
@@ -280,7 +310,7 @@ analytics.addCollector(new MyCollector());
 ## Custom Storage Adapter
 
 ```ts
-import type { StorageAdapter, AnalyticsRecord } from "@visitor-analytics/core";
+import type { StorageAdapter, AnalyticsRecord } from "@visitor-analytics-sdk/core";
 
 class RedisAdapter implements StorageAdapter {
   async save(record: AnalyticsRecord): Promise<void> {
@@ -338,7 +368,7 @@ const analytics = createAnalytics({
 ## Plugin System
 
 ```ts
-import type { Plugin, PluginContext } from "@visitor-analytics/core";
+import type { Plugin, PluginContext } from "@visitor-analytics-sdk/core";
 
 class ABTestPlugin implements Plugin {
   readonly name = "ab-test";
@@ -371,6 +401,41 @@ class ABTestPlugin implements Plugin {
 
 analytics.use(new ABTestPlugin());
 ```
+
+## SPA Route Tracking
+
+The interaction collector automatically tracks route changes by wrapping `history.pushState()` and `history.replaceState()`. This works with all SPA frameworks (React Router, Vue Router, SvelteKit, etc.).
+
+For manual route tracking (e.g., in a custom router):
+
+```ts
+analytics.trackRouteChange("/new-page");
+```
+
+In React with Next.js App Router:
+
+```tsx
+"use client";
+import { usePathname } from "next/navigation";
+import { usePageView } from "@visitor-analytics-sdk/framework/react";
+
+export function RouteTracker() {
+  const pathname = usePathname();
+  usePageView(() => pathname);
+  return null;
+}
+```
+
+## Content Security Policy (CSP)
+
+The SDK uses `fetch()` to POST data to your analytics endpoint. You must include your endpoint domain in the `connect-src` directive:
+
+```html
+<meta http-equiv="Content-Security-Policy"
+  content="connect-src 'self' https://your-analytics-api.com">
+```
+
+If using `sendBeacon` for page-unload reliability, no additional CSP directives are needed (beacons use the same `connect-src` rule).
 
 ## Data Schema
 
@@ -463,36 +528,37 @@ This SDK **never** collects:
 - Persistent fingerprint IDs
 - Any personally identifiable information (PII)
 
-**Note:** The `sessionId` field is a random UUID generated in memory per `VisitorAnalytics` instance — it is not a tracking cookie, not persisted to disk, and not sent across sessions. Fields like `cookiesEnabled` and `cookieSupport` are browser capability flags (whether cookies/APIs are available), not cookie contents.
+**Note:** The `sessionId` field is a random UUID generated in memory per `VisitorAnalytics` instance -- it is not a tracking cookie, not persisted to disk, and not sent across sessions. Fields like `cookiesEnabled` and `cookieSupport` are browser capability flags (whether cookies/APIs are available), not cookie contents.
 
 All data is anonymous and generalized for aggregate analytics only.
 
 ## Known Limitations
 
-- **Route change detection** — The `InteractionCollector` detects route changes via the `popstate` event only (browser back/forward). It does **not** monkey-patch `history.pushState()` or `history.replaceState()`. SPA router transitions (React Router, Vue Router, etc.) that use `pushState` will not increment `routeChanges`. If you need full route change tracking, implement a custom collector that listens to your router's navigation events.
-- **Multi-tab localStorage** — The `LocalStorageAdapter` uses a read-modify-write pattern that is not atomic. In multi-tab scenarios, the last writer wins and earlier records may be lost. Use `IndexedDB` as the storage backend for multi-tab environments.
-- **Session timeout** — The `InteractionCollector` resets session counters (clicks, scrolls, etc.) after `sessionTimeout` (default 30 minutes) of inactivity. This is activity-based, not time-based — the session timer resets on each click.
+- **Session timeout** -- The `InteractionCollector` resets session counters (clicks, scrolls, etc.) after `sessionTimeout` (default 30 minutes) of inactivity. This is activity-based, not time-based -- the session timer resets on each click.
+- **Multi-tab localStorage** -- The `LocalStorageAdapter` uses a read-modify-write pattern that is not atomic. In multi-tab scenarios, the last writer wins and earlier records may be lost. Use `IndexedDB` as the storage backend for multi-tab environments.
+- **Compression** -- `CompressionStream` is required for gzip compression. Supported in Chrome 80+, Firefox 113+, Safari 16.4+. Falls back to uncompressed JSON on unsupported browsers.
 
 ## Performance
 
-- **Passive event listeners** — Scroll, touch, and wheel events use `{ passive: true }`
-- **`requestIdleCallback`** — Expensive operations deferred to idle time
-- **Debounced ops** — Scroll depth and resize handlers are debounced
-- **Lazy init** — Collectors initialize lazily on idle
-- **Batched DOM reads** — DOM measurements batched via `requestAnimationFrame`
-- **Tree-shakable** — Import only the modules you need
+- **Passive event listeners** -- Scroll, touch, and wheel events use `{ passive: true }`
+- **`requestIdleCallback`** -- Expensive operations deferred to idle time
+- **Debounced ops** -- Scroll depth and resize handlers are debounced
+- **Lazy init** -- Collectors initialize lazily on idle
+- **Batched DOM reads** -- DOM measurements batched via `requestAnimationFrame`
+- **Tree-shakable** -- Import only the modules you need
+- **sendBeacon fallback** -- Reliable delivery on page unload via `navigator.sendBeacon()`
 
 ## Packages
 
 | Package | Description |
 |---------|-------------|
-| `@visitor-analytics/core` | Main orchestrator, types, event bus |
-| `@visitor-analytics/collectors` | Built-in data collectors |
-| `@visitor-analytics/storage` | Storage adapters (memory, localStorage, IndexedDB) |
-| `@visitor-analytics/uploader` | Batch uploads with retry and dedup |
-| `@visitor-analytics/plugins` | Plugin manager |
-| `@visitor-analytics/framework` | Framework integration shims |
-| `@visitor-analytics/utils` | Shared utilities |
+| `@visitor-analytics-sdk/core` | Main orchestrator, types, event bus |
+| `@visitor-analytics-sdk/collectors` | Built-in data collectors |
+| `@visitor-analytics-sdk/storage` | Storage adapters (memory, localStorage, IndexedDB) |
+| `@visitor-analytics-sdk/uploader` | Batch uploads with retry and dedup |
+| `@visitor-analytics-sdk/plugins` | Plugin manager |
+| `@visitor-analytics-sdk/framework` | Framework integration shims |
+| `@visitor-analytics-sdk/utils` | Shared utilities |
 
 ## License
 

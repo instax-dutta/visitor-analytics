@@ -112,10 +112,6 @@ export function deepFreeze<T extends object>(obj: T): Readonly<T> {
   return obj as Readonly<T>;
 }
 
-export function cloneRecord<T>(record: T): T {
-  return JSON.parse(JSON.stringify(record)) as T;
-}
-
 export function isBrowser(): boolean {
   return (
     typeof window !== "undefined" &&
@@ -124,10 +120,77 @@ export function isBrowser(): boolean {
   );
 }
 
-export function noop(): void {
-  // intentionally empty
+// ─── EventBus (moved from core to break circular dependency H2) ─────────────
+
+import type { AnalyticsEvent, StorageType } from "./types";
+export type { AnalyticsEvent, StorageType } from "./types";
+
+type Handler = (...args: readonly unknown[]) => void;
+
+export class EventBus {
+  private readonly listeners = new Map<AnalyticsEvent, Set<Handler>>();
+
+  on(event: AnalyticsEvent, handler: Handler): void {
+    let set = this.listeners.get(event);
+    if (!set) {
+      set = new Set();
+      this.listeners.set(event, set);
+    }
+    set.add(handler);
+  }
+
+  off(event: AnalyticsEvent, handler: Handler): void {
+    this.listeners.get(event)?.delete(handler);
+  }
+
+  emit(event: AnalyticsEvent, ...args: readonly unknown[]): void {
+    const set = this.listeners.get(event);
+    if (!set) return;
+    for (const handler of set) {
+      try {
+        handler(...args);
+      } catch (_err) {
+        // Swallow listener errors to prevent cascading failures
+      }
+    }
+  }
+
+  removeAllListeners(event?: AnalyticsEvent): void {
+    if (event) {
+      this.listeners.delete(event);
+    } else {
+      this.listeners.clear();
+    }
+  }
+
+  listenerCount(event: AnalyticsEvent): number {
+    return this.listeners.get(event)?.size ?? 0;
+  }
 }
 
-export function padZero(n: number): string {
-  return n < 10 ? `0${n}` : `${n}`;
+// ─── detectBestStorage (H5) ─────────────────────────────────────────────────
+
+export function detectBestStorage(): StorageType {
+  if (typeof window === "undefined") return "memory";
+
+  // Try IndexedDB first
+  try {
+    if (typeof indexedDB !== "undefined") return "indexeddb";
+  } catch {
+    // IndexedDB not available
+  }
+
+  // Try localStorage second
+  try {
+    if (typeof localStorage !== "undefined") {
+      const testKey = "__va_storage_test__";
+      localStorage.setItem(testKey, "1");
+      localStorage.removeItem(testKey);
+      return "localstorage";
+    }
+  } catch {
+    // localStorage not available
+  }
+
+  return "memory";
 }

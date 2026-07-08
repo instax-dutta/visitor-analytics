@@ -1,5 +1,5 @@
-import type { Collector, CollectorContext, FeatureData } from "@visitor-analytics/core";
-import { safeCall, SDK_VERSION } from "@visitor-analytics/utils";
+import type { Collector, CollectorContext, FeatureData } from "@visitor-analytics-sdk/core";
+import { safeCall, SDK_VERSION } from "@visitor-analytics-sdk/utils";
 
 export class FeatureCollector implements Collector {
   readonly name = "features";

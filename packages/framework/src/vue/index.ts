@@ -1,6 +1,6 @@
 import { ref, onMounted, onUnmounted, inject, type App, type InjectionKey, type Ref } from "vue";
-import { createAnalytics } from "@visitor-analytics/core";
-import type { AnalyticsConfigPartial, VisitorAnalyticsInstance, AnalyticsRecord, AnalyticsEvent } from "@visitor-analytics/core";
+import { createAnalytics } from "@visitor-analytics-sdk/core";
+import type { AnalyticsConfigPartial, VisitorAnalyticsInstance, AnalyticsRecord, AnalyticsEvent } from "@visitor-analytics-sdk/core";
 
 export const AnalyticsKey: InjectionKey<VisitorAnalyticsInstance> = Symbol("analytics");
 
@@ -11,7 +11,7 @@ export function createAnalyticsPlugin(config: AnalyticsConfigPartial) {
       app.provide(AnalyticsKey, analytics);
       app.config.globalProperties.$analytics = analytics;
 
-      // Start immediately — lifecycle hooks must be called during setup(),
+      // Start immediately -- lifecycle hooks must be called during setup(),
       // not inside plugin.install(). The analytics instance is safe to start
       // at plugin registration time since it doesn't depend on component lifecycle.
       analytics.start();

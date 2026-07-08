@@ -1,3 +1,7 @@
+// Re-export shared event types from utils (H2: break circular dependency)
+import type { AnalyticsEvent, StorageType } from "@visitor-analytics-sdk/utils";
+export type { AnalyticsEvent, StorageType };
+
 // ─── Analytics Record (top-level data envelope) ──────────────────────────────
 
 export interface AnalyticsRecord {
@@ -327,8 +331,6 @@ export interface PermissionDesc {
 
 // ─── Storage Types ───────────────────────────────────────────────────────────
 
-export type StorageType = "memory" | "localstorage" | "indexeddb" | "custom";
-
 export interface StorageAdapter {
   save(record: AnalyticsRecord): Promise<void>;
   saveBatch(records: readonly AnalyticsRecord[]): Promise<void>;
@@ -372,15 +374,13 @@ export interface UploadResult {
 
 export type UploadEventHandler = (event: UploadEvent) => void;
 
-export interface UploadEvent {
-  readonly type: "batch-sent" | "batch-success" | "batch-failed" | "retry-scheduled" | "queue-full";
-  readonly batchId: string;
-  readonly recordCount: number;
-  readonly timestamp: number;
-  readonly error?: string;
-  readonly retryCount?: number;
-  readonly nextRetryAt?: number;
-}
+// L6: Make UploadEvent a discriminated union
+export type UploadEvent =
+  | { readonly type: "batch-sent"; readonly batchId: string; readonly recordCount: number; readonly timestamp: number }
+  | { readonly type: "batch-success"; readonly batchId: string; readonly recordCount: number; readonly timestamp: number }
+  | { readonly type: "batch-failed"; readonly batchId: string; readonly recordCount: number; readonly timestamp: number; readonly error?: string }
+  | { readonly type: "retry-scheduled"; readonly batchId: string; readonly recordCount: number; readonly timestamp: number; readonly retryCount: number; readonly nextRetryAt: number }
+  | { readonly type: "queue-full"; readonly batchId: string; readonly recordCount: number; readonly timestamp: number };
 
 // ─── Plugin Types ────────────────────────────────────────────────────────────
 
@@ -399,25 +399,6 @@ export interface PluginContext {
   off(event: AnalyticsEvent, handler: (...args: readonly unknown[]) => void): void;
   getConfig(): AnalyticsConfig;
 }
-
-// ─── Analytics Events ────────────────────────────────────────────────────────
-
-export type AnalyticsEvent =
-  | "start"
-  | "stop"
-  | "flush"
-  | "sync"
-  | "record-collected"
-  | "batch-uploaded"
-  | "batch-failed"
-  | "error"
-  | "collector-registered"
-  | "collector-removed"
-  | "plugin-installed"
-  | "plugin-uninstalled"
-  | "storage-saved"
-  | "storage-loaded"
-  | "config-changed";
 
 // ─── Analytics Config ────────────────────────────────────────────────────────
 
@@ -464,8 +445,21 @@ export interface VisitorAnalyticsInstance {
   addCollector(collector: Collector): void;
   removeCollector(name: string): void;
   getCollectedData(): Promise<readonly AnalyticsRecord[]>;
+  query(query: AnalyticsQuery): Promise<readonly AnalyticsRecord[]>;
   export(): Promise<string>;
   on(event: AnalyticsEvent, handler: (...args: readonly unknown[]) => void): void;
   off(event: AnalyticsEvent, handler: (...args: readonly unknown[]) => void): void;
+  trackRouteChange(url: string): void;
   destroy(): Promise<void>;
+}
+
+// ─── Query API (M2) ─────────────────────────────────────────────────────────
+
+export interface AnalyticsQuery {
+  readonly since?: number;
+  readonly until?: number;
+  readonly pagePath?: string;
+  readonly sessionId?: string;
+  readonly limit?: number;
+  readonly offset?: number;
 }

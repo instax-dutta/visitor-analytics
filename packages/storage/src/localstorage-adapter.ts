@@ -1,5 +1,4 @@
-import type { StorageAdapter, AnalyticsRecord } from "@visitor-analytics/core";
-import { cloneRecord } from "@visitor-analytics/utils";
+import type { StorageAdapter, AnalyticsRecord } from "@visitor-analytics-sdk/core";
 
 const STORAGE_KEY = "va_records";
 
@@ -13,8 +12,9 @@ export class LocalStorageAdapter implements StorageAdapter {
   async save(record: AnalyticsRecord): Promise<void> {
     // NOTE: read-modify-write is not atomic. In multi-tab scenarios,
     // the last writer wins. Use IndexedDB for concurrent access.
+    // C4: No clone needed - core already does structuredClone
     const records = this.readAll();
-    records.push(cloneRecord(record));
+    records.push(record);
     this.writeAll(records);
   }
 
@@ -23,7 +23,7 @@ export class LocalStorageAdapter implements StorageAdapter {
     // the last writer wins. Use IndexedDB for concurrent access.
     const existing = this.readAll();
     for (const record of records) {
-      existing.push(cloneRecord(record));
+      existing.push(record);
     }
     this.writeAll(existing);
   }
@@ -77,7 +77,7 @@ export class LocalStorageAdapter implements StorageAdapter {
     try {
       localStorage.setItem(this.key, JSON.stringify(records));
     } catch {
-      // Storage full or unavailable — silently fail
+      // Storage full or unavailable -- silently fail
     }
   }
 }

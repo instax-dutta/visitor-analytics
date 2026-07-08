@@ -7,8 +7,6 @@ import {
   safeCall,
   safeCallAsync,
   isBrowser,
-  noop,
-  padZero,
 } from "../packages/utils/src/index.ts";
 
 describe("Utils", () => {
@@ -125,25 +123,6 @@ describe("Utils", () => {
     it("should detect browser environment", () => {
       // In test environment with jsdom, this should be true
       expect(typeof isBrowser()).toBe("boolean");
-    });
-  });
-
-  describe("noop", () => {
-    it("should be a no-op function", () => {
-      expect(noop()).toBeUndefined();
-    });
-  });
-
-  describe("padZero", () => {
-    it("should pad single digits", () => {
-      expect(padZero(0)).toBe("00");
-      expect(padZero(5)).toBe("05");
-      expect(padZero(9)).toBe("09");
-    });
-
-    it("should not pad double digits", () => {
-      expect(padZero(10)).toBe("10");
-      expect(padZero(23)).toBe("23");
     });
   });
 });

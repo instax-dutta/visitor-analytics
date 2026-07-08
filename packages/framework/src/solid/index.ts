@@ -1,6 +1,6 @@
 import { createSignal, onCleanup, createEffect, type JSX } from "solid-js";
-import { createAnalytics } from "@visitor-analytics/core";
-import type { AnalyticsConfigPartial, VisitorAnalyticsInstance, AnalyticsRecord } from "@visitor-analytics/core";
+import { createAnalytics } from "@visitor-analytics-sdk/core";
+import type { AnalyticsConfigPartial, VisitorAnalyticsInstance, AnalyticsRecord } from "@visitor-analytics-sdk/core";
 
 // ─── createAnalytics Hook ───────────────────────────────────────────────────
 

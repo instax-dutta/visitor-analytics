@@ -1,10 +1,13 @@
 {
-  "name": "@visitor-analytics/framework",
+  "name": "@visitor-analytics-sdk/framework",
   "version": "1.0.0",
   "type": "module",
   "main": "dist/index.js",
   "module": "dist/index.js",
   "types": "dist/index.d.ts",
+  "publishConfig": {
+    "access": "public"
+  },
   "exports": {
     ".": {
       "import": "./dist/index.js",
@@ -35,20 +38,25 @@
     "dist"
   ],
   "scripts": {
-    "build": "tsup src/index.ts src/react/index.tsx src/vue/index.ts src/svelte/index.ts src/solid/index.ts src/astro/index.ts --format esm --dts",
+    "build": "tsup --format esm --dts --treeshake",
     "typecheck": "tsc --noEmit",
     "prepublishOnly": "pnpm build"
   },
   "dependencies": {
-    "@visitor-analytics/core": "workspace:*"
+    "@visitor-analytics-sdk/core": "workspace:*",
+    "@visitor-analytics-sdk/utils": "workspace:*"
   },
   "peerDependencies": {
+    "@visitor-analytics-sdk/core": ">=1.0.0",
     "react": ">=17.0.0",
     "solid-js": ">=1.0.0",
     "svelte": ">=4.0.0",
     "vue": ">=3.0.0"
   },
   "peerDependenciesMeta": {
+    "@visitor-analytics-sdk/core": {
+      "optional": false
+    },
     "react": {
       "optional": true
     },

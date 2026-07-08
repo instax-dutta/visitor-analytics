@@ -1,5 +1,5 @@
-import { createAnalytics } from "@visitor-analytics/core";
-import type { AnalyticsConfigPartial, VisitorAnalyticsInstance } from "@visitor-analytics/core";
+import { createAnalytics } from "@visitor-analytics-sdk/core";
+import type { AnalyticsConfigPartial, VisitorAnalyticsInstance } from "@visitor-analytics-sdk/core";
 
 export function createAstroAnalytics(config: AnalyticsConfigPartial): VisitorAnalyticsInstance {
   const analytics = createAnalytics(config);
@@ -20,5 +20,5 @@ export function getAnalyticsScript(config: AnalyticsConfigPartial): string {
     flushInterval: config.flushInterval ?? 30000,
   });
 
-  return `<script type="module">import{createAnalytics}from"@visitor-analytics/core";createAnalytics(${safeConfig})</script>`;
+  return `<script type="module">import{createAnalytics}from"@visitor-analytics-sdk/core";createAnalytics(${safeConfig})</script>`;
 }

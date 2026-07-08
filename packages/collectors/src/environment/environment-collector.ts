@@ -1,5 +1,5 @@
-import type { Collector, CollectorContext, EnvironmentData } from "@visitor-analytics/core";
-import { safeCall, SDK_VERSION } from "@visitor-analytics/utils";
+import type { Collector, CollectorContext, EnvironmentData } from "@visitor-analytics-sdk/core";
+import { safeCall, SDK_VERSION } from "@visitor-analytics-sdk/utils";
 
 export class EnvironmentCollector implements Collector {
   readonly name = "environment";
