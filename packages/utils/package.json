@@ -1,5 +1,16 @@
 {
   "name": "@visitor-analytics-sdk/utils",
+  "description": "Shared utilities for the visitor-analytics SDK — ID generation, browser detection, idle callbacks, SDK versioning, and type definitions.",
+  "license": "MIT",
+  "keywords": ["visitor-analytics", "utilities", "helpers", "typescript", "sdk"],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/instax-dutta/visitor-analytics.git"
+  },
+  "homepage": "https://github.com/instax-dutta/visitor-analytics#readme",
+  "bugs": {
+    "url": "https://github.com/instax-dutta/visitor-analytics/issues"
+  },
   "version": "1.0.0",
   "type": "module",
   "main": "dist/index.js",

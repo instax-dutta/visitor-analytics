@@ -1,5 +1,16 @@
 {
   "name": "@visitor-analytics-sdk/uploader",
+  "description": "Batch uploader for the visitor-analytics SDK — configurable batching, exponential backoff retry, request deduplication, and compression.",
+  "license": "MIT",
+  "keywords": ["visitor-analytics", "uploader", "batch", "retry", "deduplication", "compression"],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/instax-dutta/visitor-analytics.git"
+  },
+  "homepage": "https://github.com/instax-dutta/visitor-analytics#readme",
+  "bugs": {
+    "url": "https://github.com/instax-dutta/visitor-analytics/issues"
+  },
   "version": "1.0.0",
   "type": "module",
   "main": "dist/index.js",

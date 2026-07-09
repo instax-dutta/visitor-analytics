@@ -1,5 +1,16 @@
 {
   "name": "@visitor-analytics-sdk/core",
+  "description": "Privacy-preserving, framework-agnostic, zero-dependency analytics SDK for web applications. Core orchestrator with event bus, type-safe API, and plugin system.",
+  "license": "MIT",
+  "keywords": ["visitor-analytics", "analytics", "privacy", "tracking", "sdk", "typescript", "web-analytics", "zero-deps"],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/instax-dutta/visitor-analytics.git"
+  },
+  "homepage": "https://github.com/instax-dutta/visitor-analytics#readme",
+  "bugs": {
+    "url": "https://github.com/instax-dutta/visitor-analytics/issues"
+  },
   "version": "1.0.0",
   "type": "module",
   "main": "dist/index.js",

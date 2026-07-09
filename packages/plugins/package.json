@@ -1,5 +1,16 @@
 {
   "name": "@visitor-analytics-sdk/plugins",
+  "description": "Plugin manager for the visitor-analytics SDK — install/uninstall lifecycle, collector registration, and event bus integration.",
+  "license": "MIT",
+  "keywords": ["visitor-analytics", "plugins", "plugin-system", "extensibility"],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/instax-dutta/visitor-analytics.git"
+  },
+  "homepage": "https://github.com/instax-dutta/visitor-analytics#readme",
+  "bugs": {
+    "url": "https://github.com/instax-dutta/visitor-analytics/issues"
+  },
   "version": "1.0.0",
   "type": "module",
   "main": "dist/index.js",

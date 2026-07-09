@@ -1,5 +1,16 @@
 {
   "name": "@visitor-analytics-sdk/framework",
+  "description": "Framework integration shims for the visitor-analytics SDK — React, Vue, Svelte, SolidJS, and Astro providers, hooks, and stores.",
+  "license": "MIT",
+  "keywords": ["visitor-analytics", "react", "vue", "svelte", "solidjs", "astro", "framework"],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/instax-dutta/visitor-analytics.git"
+  },
+  "homepage": "https://github.com/instax-dutta/visitor-analytics#readme",
+  "bugs": {
+    "url": "https://github.com/instax-dutta/visitor-analytics/issues"
+  },
   "version": "1.0.0",
   "type": "module",
   "main": "dist/index.js",

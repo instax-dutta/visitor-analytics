@@ -1,5 +1,16 @@
 {
   "name": "@visitor-analytics-sdk/collectors",
+  "description": "Modular data collectors for the visitor-analytics SDK — browser detection, device info, performance metrics, environment features, and user interaction tracking.",
+  "license": "MIT",
+  "keywords": ["visitor-analytics", "collectors", "browser-detection", "device-detection", "performance-metrics", "web-analytics"],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/instax-dutta/visitor-analytics.git"
+  },
+  "homepage": "https://github.com/instax-dutta/visitor-analytics#readme",
+  "bugs": {
+    "url": "https://github.com/instax-dutta/visitor-analytics/issues"
+  },
   "version": "1.0.0",
   "type": "module",
   "main": "dist/index.js",

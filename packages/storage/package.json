@@ -1,5 +1,16 @@
 {
   "name": "@visitor-analytics-sdk/storage",
+  "description": "Storage adapters for the visitor-analytics SDK — memory, localStorage, and IndexedDB backends with a common interface.",
+  "license": "MIT",
+  "keywords": ["visitor-analytics", "storage", "indexeddb", "localstorage", "memory-storage", "adapter"],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/instax-dutta/visitor-analytics.git"
+  },
+  "homepage": "https://github.com/instax-dutta/visitor-analytics#readme",
+  "bugs": {
+    "url": "https://github.com/instax-dutta/visitor-analytics/issues"
+  },
   "version": "1.0.0",
   "type": "module",
   "main": "dist/index.js",
