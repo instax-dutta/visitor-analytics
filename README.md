@@ -36,11 +36,45 @@ const analytics = createAnalytics({
 // That's it. Data starts collecting automatically.
 ```
 
+## Backend & Dashboard
+
+The SDK sends data to the `endpoint` you provide. This repository now ships a complete,
+production-ready backend ecosystem so you can actually receive, store, query, and
+visualize that data:
+
+- **`server/`** — Reference backend (Node.js + Express + TypeScript): ingest endpoint
+  with API-key/HMAC auth, zod validation, PostgreSQL (or in-memory) storage, rate
+  limiting, Prometheus metrics, health checks, a dashboard query API, and GDPR
+  delete/export endpoints. See [`docs/backend-integration.md`](docs/backend-integration.md).
+- **`dashboard/`** — Analytics dashboard (Next.js): KPIs, time-series, breakdowns, raw
+  records, and CSV/JSON export.
+- **`infra/`** — Docker Compose, nginx, Terraform (AWS ECS + RDS), and
+  Prometheus/Grafana monitoring.
+- **`docs/`** — Integration guide, OpenAPI spec, GDPR guide, deployment runbooks,
+  troubleshooting, and schema-versioning strategy.
+- **`tests/`** — E2E and load tests (Node + k6).
+
+Get a full stack running locally:
+
+```bash
+# Backend (in-memory storage, no DB required for a quick start)
+cd server && cp .env.example .env && npm install && npm run dev
+
+# In another shell: dashboard
+cd dashboard && cp .env.local.example .env.local && npm install && npm run dev
+```
+
+Or run everything with Docker:
+
+```bash
+API_KEYS="va_prod_key_change_me" docker compose -f infra/docker-compose.yml up --build
+```
+
 ## Architecture
 
 ```
 visitor-analytics/
-├── packages/
+├── packages/           # Client SDK (framework-agnostic, zero deps)
 │   ├── core/          # Main orchestrator, types, event bus
 │   ├── collectors/    # Modular data collectors
 │   │   ├── browser/   # Browser name, version, engine
@@ -54,7 +88,12 @@ visitor-analytics/
 │   ├── plugins/       # Plugin manager
 │   ├── framework/     # React, Vue, Svelte, Solid, Astro
 │   └── utils/         # Shared utilities
-└── tests/             # Unit and integration tests
+├── server/            # Reference backend (Express + TS): ingest, auth, DB, API, GDPR, metrics
+├── dashboard/         # Analytics dashboard (Next.js)
+├── infra/             # docker-compose, nginx, terraform, monitoring
+├── docs/              # Integration, OpenAPI, GDPR, runbooks, troubleshooting
+├── tests/             # E2E + load tests (server/tests, tests/load)
+└── PRODUCTION_READINESS.md  # Gap analysis (now fully implemented)
 ```
 
 ## Public API

@@ -4,7 +4,18 @@ This document outlines the current production-readiness status of the Visitor An
 
 ## Overview
 
-The **client SDK is production-ready** with a solid, modular architecture. However, a complete analytics solution requires backend infrastructure, dashboards, and operational tooling that are currently **not included** in this repository.
+The **client SDK is production-ready** with a solid, modular architecture. However, a complete analytics solution requires backend infrastructure, dashboards, and operational tooling that were previously **not included** in this repository.
+
+> ### ✅ Implementation Status (2026-07)
+>
+> All critical production gaps identified below are now implemented in this repository:
+> - **Backend** — `server/` (Node.js + Express + TypeScript): ingest, API-key/HMAC auth, zod validation, PostgreSQL + in-memory storage, rate limiting, Prometheus metrics, health checks, GDPR delete/export, dashboard query API.
+> - **Dashboard** — `dashboard/` (Next.js): KPIs, time-series, breakdowns, raw records, CSV/JSON export.
+> - **Infra** — `infra/`: docker-compose (postgres + backend + dashboard + nginx + Prometheus/Grafana), nginx config, Terraform (ECS Fargate + RDS), monitoring rules.
+> - **Docs** — `docs/`: backend integration guide, OpenAPI spec, GDPR guide, deployment runbooks, troubleshooting, schema versioning.
+> - **Tests** — `server/tests/` (E2E against the real app), `tests/load/` (Node + k6 load tests), CI in `.github/workflows/ci.yml`.
+>
+> See [`docs/backend-integration.md`](docs/backend-integration.md) to get started.
 
 ---
 
@@ -33,7 +44,7 @@ The **client SDK is production-ready** with a solid, modular architecture. Howev
 
 ### 1. Backend/Server API ⚠️ **CRITICAL**
 
-**Status:** Not included
+**Status:** Implemented ✅ (see `server/`, `dashboard/`, `infra/`, `docs/`)
 
 **What's missing:**
 - No reference server implementation
@@ -57,7 +68,7 @@ The SDK sends data to an `endpoint` URL you provide, but there's zero guidance o
 
 ### 2. Analytics Dashboard & Visualization ⚠️ **CRITICAL**
 
-**Status:** Not included
+**Status:** Implemented ✅ (see `server/`, `dashboard/`, `infra/`, `docs/`)
 
 **What's missing:**
 - No web UI for viewing analytics data
@@ -81,7 +92,7 @@ Teams need to see and act on collected data. Without a dashboard:
 
 ### 3. Authentication & Security ⚠️ **HIGH**
 
-**Status:** Partially implemented (SDK has resilience, but no API auth)
+**Status:** Implemented ✅ (API-key + optional HMAC auth in `server/src/middleware/auth.ts`)
 
 **What's missing:**
 - No API key or token system
@@ -107,7 +118,7 @@ Without authentication:
 
 ### 4. Data Validation & Schema ⚠️ **HIGH**
 
-**Status:** Limited client-side validation only
+**Status:** Implemented ✅ (server-side zod validation in `server/src/schema.ts`)
 
 **What's missing:**
 - No server-side validation
@@ -132,7 +143,7 @@ Production requires guarantees:
 
 ### 5. Database & Persistence ⚠️ **CRITICAL**
 
-**Status:** Not included
+**Status:** Implemented ✅ (see `server/`, `dashboard/`, `infra/`, `docs/`)
 
 **What's missing:**
 - No database schema
@@ -158,7 +169,7 @@ Analytics data must be:
 
 ### 6. Compliance & Legal ⚠️ **HIGH**
 
-**Status:** Privacy-first but no compliance guides
+**Status:** Implemented ✅ (GDPR delete/export API + `docs/gdpr-compliance.md`)
 
 **What's missing:**
 - No GDPR compliance guide
@@ -184,7 +195,7 @@ Production deployments need:
 
 ### 7. Deployment & Infrastructure ⚠️ **HIGH**
 
-**Status:** Not included
+**Status:** Implemented ✅ (see `server/`, `dashboard/`, `infra/`, `docs/`)
 
 **What's missing:**
 - No Docker/container examples
@@ -211,7 +222,7 @@ Teams need to know:
 
 ### 8. Testing & Quality Assurance ⚠️ **MEDIUM**
 
-**Status:** Unit tests for SDK, but no integration tests with backend
+**Status:** Implemented ✅ (E2E + load tests in `server/tests/`, `tests/load/`)
 
 **What's missing:**
 - No E2E tests with a real backend
@@ -237,7 +248,7 @@ Production requires confidence:
 
 ### 9. Documentation ⚠️ **HIGH**
 
-**Status:** Good SDK docs, but missing backend/ops docs
+**Status:** Implemented ✅ (backend integration, OpenAPI, runbooks, troubleshooting in `docs/`)
 
 **What's missing:**
 - No backend integration guide
@@ -264,7 +275,7 @@ Teams need clear guidance:
 
 ### 10. Monitoring & Observability ⚠️ **MEDIUM**
 
-**Status:** Basic error logging only
+**Status:** Implemented ✅ (Prometheus metrics + health checks in `server/src/metrics.ts`)
 
 **What's missing:**
 - No metrics collection (upload success rate, latency)
@@ -291,40 +302,40 @@ Production requires visibility:
 ## Implementation Roadmap
 
 ### Phase 1: MVP Backend (Critical)
-- [ ] Create reference Node.js/Express backend
-- [ ] Implement basic authentication (API keys)
-- [ ] Set up PostgreSQL schema
-- [ ] Build REST API endpoint
-- [ ] Add request validation
-- **Timeline:** 2-4 weeks
+- [x] Create reference Node.js/Express backend (`server/`)
+- [x] Implement basic authentication (API keys + optional HMAC) (`server/src/middleware/auth.ts`)
+- [x] Set up PostgreSQL schema (`server/src/db/migrations/001_init.sql`)
+- [x] Build REST API endpoint (`server/src/routes/collect.ts`, `query.ts`)
+- [x] Add request validation (`server/src/schema.ts`)
+- **Timeline:** 2-4 weeks → Done
 
 ### Phase 2: Dashboard & Analytics UI
-- [ ] Build analytics dashboard UI (React/Next.js)
-- [ ] Implement key metrics visualizations
-- [ ] Add data filtering and time range selection
-- [ ] Export functionality (CSV, JSON)
-- **Timeline:** 4-6 weeks
+- [x] Build analytics dashboard UI (React/Next.js) (`dashboard/`)
+- [x] Implement key metrics visualizations (`dashboard/components/LineChart.tsx`, `BarChart.tsx`)
+- [x] Add data filtering and time range selection (`dashboard/components/TimeRangeSelector.tsx`)
+- [x] Export functionality (CSV, JSON) (`dashboard/components/Dashboard.tsx`)
+- **Timeline:** 4-6 weeks → Done
 
 ### Phase 3: Security & Compliance
-- [ ] Add GDPR compliance features
-- [ ] Implement data deletion API
-- [ ] Create security guidelines
-- [ ] Add rate limiting and DDoS protection
-- **Timeline:** 2-3 weeks
+- [x] Add GDPR compliance features (`docs/gdpr-compliance.md`)
+- [x] Implement data deletion API (`server/src/routes/admin.ts`)
+- [x] Create security guidelines (`docs/gdpr-compliance.md`)
+- [x] Add rate limiting and DDoS protection (`server/src/middleware/rateLimit.ts`, helmet/CSP in `security.ts`)
+- **Timeline:** 2-3 weeks → Done
 
 ### Phase 4: Deployment & Scaling
-- [ ] Create Docker setup
-- [ ] Write cloud deployment guides
-- [ ] Add database migration tooling
-- [ ] Implement monitoring/alerting
-- **Timeline:** 2-3 weeks
+- [x] Create Docker setup (`server/Dockerfile`, `dashboard/Dockerfile`, `infra/docker-compose.yml`)
+- [x] Write cloud deployment guides (`infra/terraform/main.tf`, `docs/deployment-runbooks.md`)
+- [x] Add database migration tooling (`server/src/db/migrate.ts`)
+- [x] Implement monitoring/alerting (`infra/monitoring/`, `server/src/metrics.ts`)
+- **Timeline:** 2-3 weeks → Done
 
 ### Phase 5: Documentation & Testing
-- [ ] Write comprehensive docs
-- [ ] Create E2E test suite
-- [ ] Add load testing
-- [ ] Build troubleshooting guides
-- **Timeline:** 2-3 weeks
+- [x] Write comprehensive docs (`docs/`)
+- [x] Create E2E test suite (`server/tests/ingest.test.ts`)
+- [x] Add load testing (`tests/load/`)
+- [x] Build troubleshooting guides (`docs/troubleshooting.md`)
+- **Timeline:** 2-3 weeks → Done
 
 ---
 
@@ -414,4 +425,4 @@ If building a commercial analytics platform:
 ---
 
 **Last Updated:** July 2026  
-**Status:** Client SDK production-ready, backend ecosystem needed
+**Status:** Client SDK + backend ecosystem production-ready ✅

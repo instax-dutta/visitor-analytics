@@ -1,0 +1,79 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: visitor
+      POSTGRES_PASSWORD: visitor
+      POSTGRES_DB: visitor_analytics
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U visitor -d visitor_analytics"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: ./server
+    environment:
+      NODE_ENV: production
+      PORT: "3000"
+      STORAGE: postgres
+      DATABASE_URL: postgresql://visitor:visitor@postgres:5432/visitor_analytics
+      API_KEYS: ${API_KEYS:-va_prod_key_change_me}
+      HMAC_SECRET: ${HMAC_SECRET:-}
+      CORS_ORIGIN: ${CORS_ORIGIN:-*}
+      RETENTION_DAYS: "365"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    expose:
+      - "3000"
+    restart: unless-stopped
+
+  dashboard:
+    build:
+      context: ./dashboard
+    environment:
+      BACKEND_URL: http://backend:3000
+      BACKEND_API_KEY: ${API_KEYS:-va_prod_key_change_me}
+    depends_on:
+      - backend
+    expose:
+      - "3001"
+    restart: unless-stopped
+
+  nginx:
+    image: nginx:1.27-alpine
+    volumes:
+      - ./infra/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+      - dashboard
+    restart: unless-stopped
+
+  prometheus:
+    image: prom/prometheus:latest
+    volumes:
+      - ./infra/monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    ports:
+      - "9090:9090"
+    restart: unless-stopped
+
+  grafana:
+    image: grafana/grafana:latest
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_PASSWORD:-admin}
+    ports:
+      - "3002:3000"
+    depends_on:
+      - prometheus
+    restart: unless-stopped
+
+volumes:
+  pgdata:

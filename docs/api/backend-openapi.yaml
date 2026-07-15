@@ -1,0 +1,235 @@
+openapi: 3.0.3
+info:
+  title: Visitor Analytics Backend API
+  version: 1.0.0
+  description: |
+    Reference backend API for the Visitor Analytics SDK. All authenticated
+    endpoints require an `X-API-Key` header (or `Authorization: Bearer <key>`).
+servers:
+  - url: http://localhost:3000
+    description: Local development
+
+components:
+  securitySchemes:
+    apiKey:
+      type: apiKey
+      in: header
+      name: X-API-Key
+  schemas:
+    AnalyticsRecord:
+      type: object
+      required: [id, timestamp, sessionId, pagePath, browser, device, performance, environment, features, interaction, metadata]
+      properties:
+        id: { type: string }
+        timestamp: { type: integer, description: epoch ms }
+        sessionId: { type: string }
+        pagePath: { type: string }
+        pageUrl: { type: string }
+        referrer: { type: string }
+        browser:
+          type: object
+          properties:
+            name: { type: string }
+            version: { type: string }
+            userAgent: { type: string }
+        device:
+          type: object
+          properties:
+            os: { type: string }
+            formFactor: { type: string, enum: [desktop, mobile, tablet, smarttv, wearable, console, unknown] }
+        performance:
+          type: object
+          properties:
+            navigationTiming: { type: object, nullable: true }
+            largestContentfulPaint: { type: number, nullable: true }
+            cumulativeLayoutShift: { type: number, nullable: true }
+        environment:
+          type: object
+          properties:
+            timezone: { type: string }
+        features:
+          type: object
+          additionalProperties: { type: boolean }
+        interaction:
+          type: object
+          properties:
+            sessionDuration: { type: number }
+            scrollDepth: { type: number }
+            utmSource: { type: string, nullable: true }
+        metadata:
+          type: object
+          properties:
+            sdkVersion: { type: string }
+    UploadPayload:
+      type: object
+      required: [records, batchId, timestamp, sdkVersion]
+      properties:
+        schemaVersion: { type: integer }
+        batchId: { type: string }
+        timestamp: { type: integer }
+        sdkVersion: { type: string }
+        records:
+          type: array
+          items: { $ref: "#/components/schemas/AnalyticsRecord" }
+          maxItems: 1000
+    Summary:
+      type: object
+      properties:
+        totalVisits: { type: integer }
+        uniqueSessions: { type: integer }
+        avgLoadTime: { type: number, nullable: true }
+        avgLcp: { type: number, nullable: true }
+        avgCls: { type: number, nullable: true }
+        avgSessionDuration: { type: number, nullable: true }
+        bounceRate: { type: number, nullable: true }
+    TimeSeries:
+      type: object
+      properties:
+        interval: { type: string }
+        points:
+          type: array
+          items:
+            type: object
+            properties:
+              bucket: { type: string }
+              visits: { type: integer }
+              sessions: { type: integer }
+    Breakdown:
+      type: object
+      properties:
+        dimension: { type: string }
+        rows:
+          type: array
+          items:
+            type: object
+            properties:
+              key: { type: string }
+              value: { type: integer }
+
+security:
+  - apiKey: []
+
+paths:
+  /collect:
+    post:
+      summary: Ingest a batch of analytics records
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/UploadPayload" }
+      responses:
+        "202":
+          description: Accepted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string }
+                  batchId: { type: string }
+                  received: { type: integer }
+                  inserted: { type: integer }
+        "401": { description: Unauthorized }
+        "422":
+          description: Validation failed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error: { type: string }
+                  details: { type: array }
+        "429": { description: Rate limited }
+
+  /api/v1/summary:
+    get:
+      summary: Headline KPIs for a time window
+      parameters:
+        - { name: since, in: query, schema: { type: integer } }
+        - { name: until, in: query, schema: { type: integer } }
+        - { name: pagePath, in: query, schema: { type: string } }
+        - { name: sessionId, in: query, schema: { type: string } }
+      responses:
+        "200":
+          description: Summary
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Summary" }
+
+  /api/v1/timeseries:
+    get:
+      summary: Visits/sessions over time
+      parameters:
+        - { name: interval, in: query, schema: { type: string, enum: [hour, day, week, month] } }
+        - { name: since, in: query, schema: { type: integer } }
+        - { name: until, in: query, schema: { type: integer } }
+      responses:
+        "200":
+          description: Time series
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/TimeSeries" }
+
+  /api/v1/breakdown:
+    get:
+      summary: Categorical breakdown
+      parameters:
+        - { name: dimension, in: query, schema: { type: string, enum: [browser, os, formFactor, network, utmSource, utmMedium, utmCampaign, pagePath, referrer] } }
+      responses:
+        "200":
+          description: Breakdown
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Breakdown" }
+
+  /api/v1/data:
+    delete:
+      summary: GDPR / CCPA data deletion
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                sessionId: { type: string }
+                customDataKey: { type: string }
+                customDataValue: { type: string }
+      responses:
+        "200":
+          description: Deleted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string }
+                  deleted: { type: integer }
+
+  /api/v1/export:
+    get:
+      summary: GDPR data portability export
+      parameters:
+        - { name: sessionId, in: query, schema: { type: string } }
+        - { name: customDataKey, in: query, schema: { type: string } }
+        - { name: customDataValue, in: query, schema: { type: string } }
+      responses:
+        "200":
+          description: JSON export of subject records
+
+  /health:
+    get:
+      summary: Liveness / readiness probe
+      responses:
+        "200": { description: Healthy }
+        "503": { description: Unhealthy }
+
+  /metrics:
+    get:
+      summary: Prometheus metrics
+      responses:
+        "200":
+          description: Prometheus text format
+          content:
+            text/plain: { schema: { type: string } }
